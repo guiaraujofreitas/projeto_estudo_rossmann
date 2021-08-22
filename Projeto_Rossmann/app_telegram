@@ -1,0 +1,49 @@
+import pandas as pd
+import json
+import requests
+
+def load_dataset(Store_id):
+
+    df10 = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\test')
+    df10 = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\store')
+
+    #merge test dataset + Store
+    df_test = pd.merge(df10, df_store, how='left', on='Store')
+
+    #chosse the Store
+    df_test = df_test[df_test['Store']== "Store_id"]
+
+    #remove store closed
+    df_test = df_test[df_test['Open'] != 0 ] #lojas abertas (que são igual == 1)
+
+    df_test = df_test[~df_test['Open'].isnull() ] #lojas que são diferentes de vazio (NAN)/ por isso tem " ~" reresenta diferente
+
+    df_test = df_test.drop('Id', axis = 1) # removendo a coluna 'Id'
+
+    # convertendo para o formato json (linguagem entre sistemas)
+    data = json.dumps( df_test.to_dict( orient = 'records') )
+    
+    return data
+
+def  predict (data):
+
+    # API Call
+    url = 'https://teste-herokuapp.herokuapp.com/rossmann/predict'
+    header = {'Content-type': 'application/json' } #qual tipo de aplicação
+    data = data # os dados que serão coletados
+    r =requests.post( url,data, headers = header) #chamando a biblioteca que utiliza o método post(que envia) os dados p/requisição.
+
+    print( 'Status Code {}'.format( r.status_code ) ) #verificando se há algum erro no servidor (erro page web 404/504...etc)
+
+    d1 = pd.DataFrame( r.json(), columns=r.json()[0].keys() )
+    
+    return d1
+
+#d2 = d1[['store', 'prediction']].groupby( 'store' ).sum().reset_index()
+
+#for i in range( len( d2 ) ):
+    #print( 'Store Number {} will sell R${:,.2f} in the next 6 weeks'.format( 
+            #d2.loc[i, 'store'], 
+            #d2.loc[i, 'prediction'] ) )
+
+
