@@ -1,0 +1,139 @@
+import requests
+import pandas as pd
+import json
+
+from flask import Flask, request, Response
+
+##contanste
+
+TOKEN = "1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is"
+
+##info about the Bot
+#https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/getMe
+
+##Get Updates
+##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/getUpdates
+
+##Get Webhook (para uso de envio em máquina local)
+##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/setWebhook?url=https://1095a5f1d617bf.localhost.run
+
+##cod chat_id = 1299583213
+
+##sendMessage 
+##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/sendMessage?chat_id=1299583213d&text=Hello Guilherme, I'm fine. ##What about you?.
+
+def send_message(chat_id,text):
+    url = "https://api.telegram.org/bot{}".format( TOKEN )
+    url = url + "sendMessage?chat_id={}".format(chat_id)
+
+    r = requests.post( url, json={"text": text} )
+    print ("Status code{}".format( r.status_code ) )
+    
+    return None
+
+
+def load_dataset(store_id):
+
+    df10 = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\test')
+    df_store_raw = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\store')
+
+    #merge test dataset + Store
+    df_test = pd.merge(df10, df_store_raw, how='left', on='Store')
+
+    #chosse the Store
+    df_test = df_test[df_test['Store']== store_id]
+    
+    if not def_test.empty:
+
+        #remove store closed
+        df_test = df_test[df_test['Open'] != 0 ] ##lojas abertas (que são igual == 1)
+
+        df_test = df_test[~df_test['Open'].isnull()] ##lojas que são diferentes de vazio (NAN)/ por isso tem " ~" reresenta diferente
+
+        df_test = df_test.drop('Id', axis=1) ##removendo a coluna 'Id'
+
+        ## convertendo para o formato json (linguagem entre sistemas)
+        data = json.dumps( df_test.to_dict( orient = 'records') )
+    
+    else:
+        data= "error"
+    
+    return data
+
+def  predict (data):
+
+    # API Call
+    url = 'https://teste-herokuapp.herokuapp.com/rossmann/predict'
+    header = {'Content-type': 'application/json' } #qual tipo de aplicação
+    data = data ##os dados que serão coletados
+    r =requests.post( url,data, headers = header) #chamando a biblioteca que utiliza o método post(que envia) os dados p/requisição.
+
+    print( 'Status Code {}'.format( r.status_code ) ) #verificando se há algum erro no servidor (erro page web 404/504...etc)
+
+    d1 = pd.DataFrame( r.json(), columns=r.json()[0].keys() )
+    
+    return d1
+
+#Api initialize
+
+def parse_message(message):
+    chat_id= message["message"]["chat"]["id"]
+    store_id= message["message"]["text"]
+
+    store_id= store_id.replace( "/", "")
+
+    try:
+    
+        store_id =int(store_id)
+
+    except ValueError:
+        store_id= "error"
+
+    return chat_id, store_id
+
+
+app = Flask (__name__)
+
+@app.route('/', methods=["GET","POST"] )
+
+
+def index():
+    if request.method == "POST":
+        message = request.get_json()
+        
+        chat_id,store_id = parse_message(message)
+        
+        if store_id != "error":
+            data= load_dataset(store_id)
+            
+            if data != "error":
+                #prediction
+                d1 = predict( data )
+                
+                #calculation
+                d2 = d1[['store', 'prediction']].groupby( 'store' ).sum().reset_index()
+
+     
+                msg=  "Store Number {} will sell R${:,.2f} in the next 6 weeks".format( 
+                            d2['store'].values[0],
+                            d2['prediction'].values[0] )
+                
+                send_message(chat_id,msg)
+                return Response("Ok", status=200)
+
+            else:
+                send_message(chat_id, "Store Not Avaliable")
+                return Response ("Ok", status=200)
+        else:
+            send_message(chat_id, "Store is Wrong")
+            return Response("Ok" ,  status=200)
+    else:
+        return "<h1> RossmannBot <h1>"
+    
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000)
+    
+
+
+
