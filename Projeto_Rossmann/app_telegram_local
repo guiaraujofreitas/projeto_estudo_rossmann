@@ -14,16 +14,16 @@ TOKEN = "1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is"
 ##Get Updates
 ##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/getUpdates
 
-##Get Webhook (para uso de envio em máquina local)
+#Webhook (para uso de envio em máquina local)
 ##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/setWebhook?url=https://1095a5f1d617bf.localhost.run
 
 ##cod chat_id = 1299583213
 
 ##sendMessage 
-##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/sendMessage?chat_id=1299583213d&text=Hello Guilherme, I'm fine. ##What about you?.
+##https://api.telegram.org/bot1979530923:AAFxSSR4d1anmKXY9NvLinJK_NgD6d24-Is/sendMessage?chat_id=1299583213d&text=Hello Guilherme, I'm fine. 
 
 def send_message(chat_id,text):
-    url = "https://api.telegram.org/bot{}".format( TOKEN )
+    url = "https://api.telegram.org/bot{}/".format( TOKEN )
     url = url + "sendMessage?chat_id={}".format(chat_id)
 
     r = requests.post( url, json={"text": text} )
@@ -34,8 +34,8 @@ def send_message(chat_id,text):
 
 def load_dataset(store_id):
 
-    df10 = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\test')
-    df_store_raw = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\store')
+    df10 = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\test.csv')
+    df_store_raw = pd.read_csv(r'C:\Users\Administrador.000\Google Drive\projeto_estudo_rossmann\arquivos_excel_do_projeto\store.csv')
 
     #merge test dataset + Store
     df_test = pd.merge(df10, df_store_raw, how='left', on='Store')
@@ -62,7 +62,7 @@ def load_dataset(store_id):
 
 def  predict (data):
 
-    # API Call
+    ##API Call
     url = 'https://teste-herokuapp.herokuapp.com/rossmann/predict'
     header = {'Content-type': 'application/json' } #qual tipo de aplicação
     data = data ##os dados que serão coletados
@@ -127,6 +127,7 @@ def index():
         else:
             send_message(chat_id, "Store is Wrong")
             return Response("Ok" ,  status=200)
+        
     else:
         return "<h1> RossmannBot <h1>"
     
